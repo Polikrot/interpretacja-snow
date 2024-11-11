@@ -1,64 +1,58 @@
-import { useState } from 'react';
-import axios from 'axios';
+// ./pages/index.js
+
+import { useState } from "react";
 
 export default function Home() {
-  const [dream, setDream] = useState('');
-  const [mode, setMode] = useState('simple');
-  const [interpretation, setInterpretation] = useState('');
+  const [dreamText, setDreamText] = useState("");
+  const [interpretationMode, setInterpretationMode] = useState("brief");
+  const [interpretation, setInterpretation] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleInterpretation = async () => {
+  const handleInterpret = async () => {
     setLoading(true);
+    setInterpretation("");
+
     try {
-      const response = await axios.post('/api/interpretDream', { dream, mode });
-      setInterpretation(response.data.interpretation);
-    } catch (error) {
-      alert("Wystąpił błąd przy interpretacji snu.");
+      const response = await fetch("/api/interpretDream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dreamText, interpretationMode }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Something went wrong");
+      }
+
+      const data = await response.json();
+      setInterpretation(data.interpretation);
+    } catch (err) {
+      console.error(err);  // Logowanie błędu
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <div>
       <h1>Interpretacja Snów</h1>
       <textarea
-        value={dream}
-        onChange={(e) => setDream(e.target.value)}
-        placeholder="Opisz swój sen tutaj..."
-        rows={5}
-        style={{ width: '100%', marginBottom: '10px' }}
-      />
-      <div>
-        <label>
-          <input
-            type="radio"
-            name="mode"
-            value="simple"
-            checked={mode === 'simple'}
-            onChange={() => setMode('simple')}
-          />
-          Uproszczona interpretacja
-        </label>
-        <label style={{ marginLeft: '10px' }}>
-          <input
-            type="radio"
-            name="mode"
-            value="professional"
-            checked={mode === 'professional'}
-            onChange={() => setMode('professional')}
-          />
-          Profesjonalna interpretacja
-        </label>
-      </div>
-      <button onClick={handleInterpretation} disabled={loading}>
-        {loading ? 'Interpretuje...' : 'Interpretuj Sen'}
+        value={dreamText}
+        onChange={(e) => setDreamText(e.target.value)}
+        placeholder="Opisz swój sen"
+      ></textarea>
+      <select
+        value={interpretationMode}
+        onChange={(e) => setInterpretationMode(e.target.value)}
+      >
+        <option value="brief">Interpretacja uproszczona</option>
+        <option value="extended">Interpretacja rozszerzona</option>
+      </select>
+      <button onClick={handleInterpret} disabled={loading}>
+        {loading ? "Interpretowanie..." : "Zinterpretuj"}
       </button>
-      {interpretation && (
-        <div style={{ marginTop: '20px', backgroundColor: '#f0f0f0', padding: '10px' }}>
-          <h3>Interpretacja:</h3>
-          <p>{interpretation}</p>
-        </div>
-      )}
+      {interpretation && <p>{interpretation}</p>}
     </div>
   );
 }
